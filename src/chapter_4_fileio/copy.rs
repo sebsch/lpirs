@@ -60,9 +60,9 @@ mod tests {
 
     #[test]
     fn test_copy_file_copies_content() {
-        let from_path = Path::new("/tmp/file_with_hole").display().to_string();
-        let dest_path = Path::new("/tmp/file_with_hole.bak").display().to_string();
-        //initialize(&from_path);
+        let from_path = Path::new("/tmp/somefile").display().to_string();
+        let dest_path = Path::new("/tmp/somefile.bak").display().to_string();
+        initialize(&from_path);
 
         copy_file(&from_path, &dest_path).unwrap();
 

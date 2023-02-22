@@ -56,7 +56,7 @@ mod tests {
 
     #[test]
     fn create_huge_file_with_big_hole() {
-        let file_path = "/tmp/file_with_hole";
+        let file_path = "/dev/shm/file_with_hole";
 
         File::create(file_path).unwrap();
 
