@@ -8,6 +8,37 @@ use nix::unistd::{close, getpid};
 
 use std::{io, thread, time};
 
+fn exclusive_open(file_path: &str, sleep: bool) -> Result<(), Box<dyn Error>> {
+    let pid = getpid();
+
+    /*
+    O_EXCL
+    If O_CREAT and O_EXCL are set, open() shall fail if the file exists. The check for the existence
+    of the file and the creation of the file if it does not exist shall be atomic with respect to
+    other threads executing open() naming the same filename in the same directory with O_EXCL and
+    O_CREAT set. If O_EXCL and O_CREAT are set, and path names a symbolic link, open() shall fail
+    and set errno to [EEXIST], regardless of the contents of the symbolic link. If O_EXCL is set
+    and O_CREAT is not set, the result is undefined.
+    */
+    match open(
+        file_path,
+        OFlag::O_WRONLY | OFlag::O_CREAT | OFlag::O_EXCL,
+        Mode::S_IRUSR | Mode::S_IWUSR,
+    ) {
+        Ok(_fd) => {
+            println!("[PID: {pid}] Created file {file_path} exclusively");
+        }
+        Err(err) => {
+            return Err(Box::new(io::Error::new(
+                io::ErrorKind::Other,
+                format!("Open: {err}"),
+            )));
+        }
+    }
+
+    Ok(())
+}
+
 fn bad_exclusive_open(file_path: &str, sleep: bool) -> Result<(), Box<dyn Error>> {
     let pid = getpid();
 
@@ -84,6 +115,23 @@ mod tests {
         let result = thread::spawn(move || {
             // this should result in an error, since the file is opened by the first thread
             assert!(bad_exclusive_open(file_path, false).is_err());
+        });
+
+        // is the assumption right?
+        assert!(result.join().is_ok());
+    }
+
+    #[test]
+    fn test_exclusive_open_is_atomic() {
+        let file_path = "/dev/shm/conflicting_file";
+        remove_file(file_path).ok();
+
+        // opens the file and sleeps
+        let _ = thread::spawn(move || exclusive_open(file_path, true).unwrap());
+
+        let result = thread::spawn(move || {
+            // this should result in an error, since the file is opened by the first thread
+            assert!(exclusive_open(file_path, false).is_err());
         });
 
         // is the assumption right?
