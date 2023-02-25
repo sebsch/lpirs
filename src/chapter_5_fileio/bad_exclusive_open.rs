@@ -62,7 +62,7 @@ mod tests {
 
     #[test]
     fn test_run_bad_exclusive_open() {
-        remove_file("/tmp/d");
+        remove_file("/tmp/d").ok();
         bad_exclusive_open("/tmp/d", false).unwrap();
     }
     #[test]
@@ -76,7 +76,7 @@ mod tests {
     #[should_panic] // file is opened twice!
     fn test_bad_exclusive_open_is_not_atomic() {
         let file_path = "/dev/shm/conflicting_file";
-        remove_file(file_path);
+        remove_file(file_path).ok();
 
         // opens the file and sleeps
         let _ = thread::spawn(move || bad_exclusive_open(file_path, true).unwrap());
