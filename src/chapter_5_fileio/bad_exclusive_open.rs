@@ -133,7 +133,10 @@ mod tests {
 
         let handle = thread::spawn(move || {
             // this should result in an error, since the file is opened by the first thread
-            exclusive_open(file_path, false).expect_err(&ErrorKind::AlreadyExists.to_string());
+
+            let error = exclusive_open(file_path, false).unwrap_err();
+
+            assert_eq!(error.to_string(), "EEXIST: File exists");
         });
 
         // is the assumption right?
