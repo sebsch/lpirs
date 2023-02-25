@@ -4,7 +4,7 @@ use std::error::Error;
 use nix::fcntl::open;
 use nix::fcntl::OFlag;
 use nix::sys::stat::Mode;
-use nix::unistd::{close, getpid, read, write};
+use nix::unistd::{close, getpid};
 
 use std::{io, thread, time};
 
@@ -40,7 +40,7 @@ fn bad_exclusive_open(file_path: &str, sleep: bool) -> Result<(), Box<dyn Error>
         OFlag::O_WRONLY | OFlag::O_CREAT,
         Mode::S_IRUSR | Mode::S_IWUSR,
     ) {
-        Ok(fd) => {
+        Ok(_fd) => {
             println!("[PID: {pid}] Created file {file_path} exclusively");
         }
         Err(err) => {
