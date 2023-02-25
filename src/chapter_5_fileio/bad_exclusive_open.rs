@@ -67,7 +67,7 @@ mod tests {
     }
     #[test]
     #[should_panic]
-    fn test_run_bad_exclusive_open_panics_id_exists() {
+    fn test_run_bad_exclusive_open_panics_if_exists() {
         bad_exclusive_open("/tmp/d2", false).unwrap();
         bad_exclusive_open("/tmp/d2", false).unwrap();
     }
