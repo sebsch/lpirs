@@ -8,7 +8,7 @@ use nix::unistd::{close, getpid};
 
 use std::{io, thread, time};
 
-fn exclusive_open(file_path: &str, sleep: bool) -> Result<(), Box<dyn Error>> {
+fn exclusive_open(file_path: &str, _sleep: bool) -> Result<(), Box<dyn Error>> {
     let pid = getpid();
 
     /*
@@ -29,10 +29,11 @@ fn exclusive_open(file_path: &str, sleep: bool) -> Result<(), Box<dyn Error>> {
             println!("[PID: {pid}] Created file {file_path} exclusively");
         }
         Err(err) => {
-            return Err(Box::new(io::Error::new(
-                io::ErrorKind::Other,
-                format!("Open: {err}"),
-            )));
+            if err == Errno::EEXIST {
+                return Err(Box::new(io::Error::new(io::ErrorKind::AlreadyExists, err)));
+            }
+
+            return Err(Box::new(io::Error::new(io::ErrorKind::Other, err)));
         }
     }
 
@@ -89,6 +90,7 @@ fn bad_exclusive_open(file_path: &str, sleep: bool) -> Result<(), Box<dyn Error>
 mod tests {
     use super::*;
     use std::fs::remove_file;
+    use std::io::ErrorKind;
     use std::thread;
 
     #[test]
@@ -129,12 +131,12 @@ mod tests {
         // opens the file and sleeps
         let _ = thread::spawn(move || exclusive_open(file_path, true).unwrap());
 
-        let result = thread::spawn(move || {
+        let handle = thread::spawn(move || {
             // this should result in an error, since the file is opened by the first thread
-            assert!(exclusive_open(file_path, false).is_err());
+            exclusive_open(file_path, false).expect_err(&ErrorKind::AlreadyExists.to_string());
         });
 
         // is the assumption right?
-        assert!(result.join().is_ok());
+        assert!(handle.join().is_ok());
     }
 }
