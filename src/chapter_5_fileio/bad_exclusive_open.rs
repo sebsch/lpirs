@@ -67,21 +67,12 @@ fn bad_exclusive_open(file_path: &str, sleep: bool) -> Result<(), Box<dyn Error>
     }
     // not atomic!! One can open the file here
 
-    match open(
+    open(
         file_path,
         OFlag::O_WRONLY | OFlag::O_CREAT,
         Mode::S_IRUSR | Mode::S_IWUSR,
-    ) {
-        Ok(_fd) => {
-            println!("[PID: {pid}] Created file {file_path} exclusively");
-        }
-        Err(err) => {
-            return Err(Box::new(io::Error::new(
-                io::ErrorKind::Other,
-                format!("Open: {err}"),
-            )));
-        }
-    }
+    )?;
+    println!("[PID: {pid}] Created file {file_path} exclusively");
 
     Ok(())
 }
@@ -108,7 +99,7 @@ mod tests {
     #[test]
     #[should_panic] // file is opened twice!
     fn test_bad_exclusive_open_is_not_atomic() {
-        let file_path = "/dev/shm/conflicting_file";
+        let file_path = "/dev/shm/conflicting_file_not_atomic";
         remove_file(file_path).ok();
 
         // opens the file and sleeps
@@ -133,9 +124,7 @@ mod tests {
 
         let handle = thread::spawn(move || {
             // this should result in an error, since the file is opened by the first thread
-
             let error = exclusive_open(file_path, false).unwrap_err();
-
             assert_eq!(error.to_string(), "EEXIST: File exists");
         });
 
